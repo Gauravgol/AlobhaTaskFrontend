@@ -1,31 +1,47 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
-
-const API_URL = "http://localhost:5000/api/teams";
+import axiosInstance from "../api/axiosInstance";
 
 // Fetch teams
 export const fetchTeams = createAsyncThunk("teams/fetch", async (_, thunkAPI) => {
   try {
-    const token = localStorage.getItem("token");
-    const res = await axios.get(API_URL, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.data;
+    const res = await axiosInstance.get("/teams");
+    // Extract the data array from the response
+    return res.data.data || res.data;
   } catch (err) {
-    return thunkAPI.rejectWithValue(err.response.data);
+    return thunkAPI.rejectWithValue(err.response?.data || err.message);
   }
 });
 
 // Create team (Admin only)
 export const createTeam = createAsyncThunk("teams/create", async (teamData, thunkAPI) => {
   try {
-    const token = localStorage.getItem("token");
-    const res = await axios.post(API_URL, teamData, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.data;
+    const res = await axiosInstance.post("/teams", teamData);
+    // Extract the data from the response
+    return res.data.data || res.data;
   } catch (err) {
-    return thunkAPI.rejectWithValue(err.response.data);
+    return thunkAPI.rejectWithValue(err.response?.data || err.message);
+  }
+});
+
+// Add user to team (Admin only)
+export const addUserToTeam = createAsyncThunk("teams/addUser", async ({ teamId, userId }, thunkAPI) => {
+  try {
+    const res = await axiosInstance.post(`/teams/${teamId}/users`, { userId });
+    // Extract the data from the response
+    return res.data.data || res.data;
+  } catch (err) {
+    return thunkAPI.rejectWithValue(err.response?.data || err.message);
+  }
+});
+
+// Remove user from team (Admin only)
+export const removeUserFromTeam = createAsyncThunk("teams/removeUser", async ({ teamId, userId }, thunkAPI) => {
+  try {
+    const res = await axiosInstance.delete(`/teams/${teamId}/users/${userId}`);
+    // Extract the data from the response
+    return res.data.data || res.data;
+  } catch (err) {
+    return thunkAPI.rejectWithValue(err.response?.data || err.message);
   }
 });
 
@@ -52,6 +68,18 @@ const teamSlice = createSlice({
       })
       .addCase(createTeam.fulfilled, (state, action) => {
         state.teams.push(action.payload);
+      })
+      .addCase(addUserToTeam.fulfilled, (state, action) => {
+        const index = state.teams.findIndex(team => team._id === action.payload._id);
+        if (index !== -1) {
+          state.teams[index] = action.payload;
+        }
+      })
+      .addCase(removeUserFromTeam.fulfilled, (state, action) => {
+        const index = state.teams.findIndex(team => team._id === action.payload._id);
+        if (index !== -1) {
+          state.teams[index] = action.payload;
+        }
       });
   },
 });

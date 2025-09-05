@@ -1,19 +1,16 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
-
-const API_URL = "http://localhost:5000/api/logs";
+import axiosInstance from "../api/axiosInstance";
 
 // Fetch logs (Admin only)
 export const fetchLogs = createAsyncThunk("logs/fetch", async (filters, thunkAPI) => {
   try {
-    const token = localStorage.getItem("token");
-    const res = await axios.get(API_URL, {
-      headers: { Authorization: `Bearer ${token}` },
+    const res = await axiosInstance.get("/logs", {
       params: filters || {},
     });
-    return res.data;
+    // Extract the data array from the response
+    return res.data.data || res.data;
   } catch (err) {
-    return thunkAPI.rejectWithValue(err.response.data);
+    return thunkAPI.rejectWithValue(err.response?.data || err.message);
   }
 });
 

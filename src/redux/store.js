@@ -3,6 +3,7 @@ import authReducer from "./authSlice";
 import todoReducer from "./todoSlice";
 import teamReducer from "./teamSlice";
 import logReducer from "./logSlice";
+import userReducer from "./userSlice";
 
 const store = configureStore({
   reducer: {
@@ -10,6 +11,7 @@ const store = configureStore({
     todos: todoReducer,
     teams: teamReducer,
     logs: logReducer,
+    users: userReducer,
   },
 });
 

@@ -1,31 +1,59 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
-
-const API_URL = "http://localhost:5000/api/todos";
+import axiosInstance from "../api/axiosInstance";
 
 // Fetch all todos
-export const fetchTodos = createAsyncThunk("todos/fetch", async (_, thunkAPI) => {
+export const fetchTodos = createAsyncThunk("todos/fetch", async (filters, thunkAPI) => {
   try {
-    const token = localStorage.getItem("token");
-    const res = await axios.get(API_URL, {
-      headers: { Authorization: `Bearer ${token}` },
+    const res = await axiosInstance.get("/todos", {
+      params: filters || {},
     });
-    return res.data;
+    // Extract the data array from the response
+    return res.data.data || res.data;
   } catch (err) {
-    return thunkAPI.rejectWithValue(err.response.data);
+    return thunkAPI.rejectWithValue(err.response?.data || err.message);
   }
 });
 
 // Create a todo
 export const createTodo = createAsyncThunk("todos/create", async (todoData, thunkAPI) => {
   try {
-    const token = localStorage.getItem("token");
-    const res = await axios.post(API_URL, todoData, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.data;
+    const res = await axiosInstance.post("/todos", todoData);
+    // Extract the data from the response
+    return res.data.data || res.data;
   } catch (err) {
-    return thunkAPI.rejectWithValue(err.response.data);
+    return thunkAPI.rejectWithValue(err.response?.data || err.message);
+  }
+});
+
+// Update a todo
+export const updateTodo = createAsyncThunk("todos/update", async ({ id, todoData }, thunkAPI) => {
+  try {
+    const res = await axiosInstance.put(`/todos/${id}`, todoData);
+    // Extract the data from the response
+    return res.data.data || res.data;
+  } catch (err) {
+    return thunkAPI.rejectWithValue(err.response?.data || err.message);
+  }
+});
+
+// Delete a todo
+export const deleteTodo = createAsyncThunk("todos/delete", async (id, thunkAPI) => {
+  try {
+    await axiosInstance.delete(`/todos/${id}`);
+    return id;
+  } catch (err) {
+    return thunkAPI.rejectWithValue(err.response?.data || err.message);
+  }
+});
+
+// Share todo access
+export const shareTodoAccess = createAsyncThunk("todos/share", async ({ id, userIds }, thunkAPI) => {
+  try {
+    const res = await axiosInstance.post(`/todos/${id}/share`, { userIds });
+    // Extract the data from the response
+    return res.data.data || res.data;
+  } catch (err) {
+    return thunkAPI.rejectWithValue(err.response?.data || err.message);
   }
 });
 
@@ -52,6 +80,21 @@ const todoSlice = createSlice({
       })
       .addCase(createTodo.fulfilled, (state, action) => {
         state.todos.push(action.payload);
+      })
+      .addCase(updateTodo.fulfilled, (state, action) => {
+        const index = state.todos.findIndex(todo => todo._id === action.payload._id);
+        if (index !== -1) {
+          state.todos[index] = action.payload;
+        }
+      })
+      .addCase(deleteTodo.fulfilled, (state, action) => {
+        state.todos = state.todos.filter(todo => todo._id !== action.payload);
+      })
+      .addCase(shareTodoAccess.fulfilled, (state, action) => {
+        const index = state.todos.findIndex(todo => todo._id === action.payload._id);
+        if (index !== -1) {
+          state.todos[index] = action.payload;
+        }
       });
   },
 });
