@@ -1,42 +1,54 @@
 import React, { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import { login } from "../redux/authSlice";
 import { useNavigate } from "react-router-dom";
 
-const LoginPage = () => {
-  const [form, setForm] = useState({ username: "", password: "" });
+export default function LoginPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { loading, error } = useSelector((state) => state.auth);
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [error, setError] = useState(null);
 
-  const handleSubmit = (e) => {
+  const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const onSubmit = async (e) => {
     e.preventDefault();
-    dispatch(login(form)).then((res) => {
-      if (res.meta.requestStatus === "fulfilled") navigate("/dashboard");
-    });
+    setError(null);
+    const res = await dispatch(login(form));
+    if (res?.meta?.requestStatus === "fulfilled") {
+      // redirect to dashboard
+      navigate("/dashboard");
+    } else {
+      setError(res?.payload?.message || "Login failed");
+    }
   };
 
   return (
-    <div>
+    <div style={{ padding: 24 }}>
       <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="Username"
-          value={form.username}
-          onChange={(e) => setForm({ ...form, username: e.target.value })}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
-        />
-        <button type="submit" disabled={loading}>Login</button>
+      <form onSubmit={onSubmit}>
+        <div>
+          <input
+            name="email"
+            placeholder="Email"
+            value={form.email}
+            onChange={onChange}
+            required
+          />
+        </div>
+        <div>
+          <input
+            name="password"
+            type="password"
+            placeholder="Password"
+            value={form.password}
+            onChange={onChange}
+            required
+          />
+        </div>
+        <button type="submit">Login</button>
       </form>
       {error && <p style={{ color: "red" }}>{error}</p>}
     </div>
   );
-};
-
-export default LoginPage;
+}

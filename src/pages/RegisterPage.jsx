@@ -1,50 +1,43 @@
 import React, { useState } from "react";
 import { useDispatch } from "react-redux";
-import { registerUser } from "../redux/authSlice";
+import { register } from "../redux/authSlice";
+import { useNavigate } from "react-router-dom";
 
 export default function RegisterPage() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [error, setError] = useState(null);
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const onChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
-    dispatch(registerUser(form));
+    setError(null);
+    const res = await dispatch(register(form));
+    if (res?.meta?.requestStatus === "fulfilled") {
+      navigate("/login");
+    } else {
+      setError(res?.payload?.message || "Registration failed");
+    }
   };
 
   return (
-    <div style={{ padding: "2rem" }}>
+    <div style={{ padding: 24 }}>
       <h2>Register</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          name="name"
-          placeholder="Name"
-          value={form.name}
-          onChange={handleChange}
-        />
-        <br />
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          value={form.email}
-          onChange={handleChange}
-        />
-        <br />
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={form.password}
-          onChange={handleChange}
-        />
-        <br />
+      <form onSubmit={onSubmit}>
+        <div>
+          <input name="name" placeholder="Name" value={form.name} onChange={onChange} required />
+        </div>
+        <div>
+          <input name="email" placeholder="Email" value={form.email} onChange={onChange} required />
+        </div>
+        <div>
+          <input name="password" type="password" placeholder="Password" value={form.password} onChange={onChange} required />
+        </div>
         <button type="submit">Register</button>
       </form>
+      {error && <p style={{ color: "red" }}>{error}</p>}
     </div>
   );
 }
